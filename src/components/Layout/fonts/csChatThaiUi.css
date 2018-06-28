@@ -1,0 +1,9 @@
+@font-face {
+    font-family: csChatThaiUI;
+    src: url("CSChatThaiUI.eot")/* EOT file for IE */
+}
+
+@font-face {
+    font-family: csChatThaiUI;
+    src: url("CSChatThaiUI.ttf")/* TTF file for CSS3 browsers */
+}

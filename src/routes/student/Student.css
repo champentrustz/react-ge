@@ -1,0 +1,11 @@
+@import '../../components/variables.css';
+
+.smQuestion{
+  margin-top:2.5em;
+}
+
+body {
+  background-color: #f5f5f5;
+  margin-top: 60px;
+}
+
