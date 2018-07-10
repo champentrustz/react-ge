@@ -528,13 +528,13 @@ exerciseNameChange(event){
 
 
   popUpCreate(exercise_ID){
-   const win = window.open('http://58.181.171.138/php/exercise-question/exercise-question-create-session.php?exercise_id='+exercise_ID,'exercise-question-create','width=1200,height=1000');
-    var timer = setInterval(function() {
-      if(win.closed) {
-        clearInterval(timer);
-        window.location.reload();
-      }
-    }, 500);
+     const win = window.open('http://58.181.171.138/php/exercise-question/exercise-question-create-session.php?exercise_id='+exercise_ID,'exercise-question-create','width=1200,height=1000');
+      var timer = setInterval(function() {
+        if(win.closed) {
+          clearInterval(timer);
+          window.location.reload();
+        }
+      }, 500);
   }
 
   popUpUpdate(exercise_ID){
