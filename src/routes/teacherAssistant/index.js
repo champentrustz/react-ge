@@ -155,7 +155,7 @@ async function action({ fetch }, context) {
       <Layout>
         <TeacherAssistant  exercise = {data.courseExercise} checkStudent = {data.checkStudent} DATE={courseDate}
                           course = {data.course} courseID={courseID} courseName={courseName} courseSection={courseSection} sectionName={sectionName}
-                          keyActive={context.key} statusClass={statusClass}/>
+                          keyActive={context.key} statusClass={statusClass} courseStartTime={courseStartTime} courseEndTime={courseEndTime}/>
       </Layout>
     ),
   };

@@ -43,6 +43,8 @@ class TeacherAssistant extends React.Component {
     courseName: PropTypes.string.isRequired,
     courseSection: PropTypes.string.isRequired,
     sectionName: PropTypes.string.isRequired,
+    courseStartTime: PropTypes.string.isRequired,
+    courseEndTime: PropTypes.string.isRequired,
     exercise: PropTypes.arrayOf(PropTypes.shape({
     })).isRequired,
     checkStudent: PropTypes.arrayOf(PropTypes.shape({
@@ -345,7 +347,7 @@ class TeacherAssistant extends React.Component {
                     <br/>
                     <Row>
                       <iframe frameBorder="0"
-                              src={'http://58.181.171.138/php/check/check-student-detail.php?course_id=' + this.props.courseID + '&course_section=' + this.props.courseSection + '&course_start=' + this.props.courseStartTime + '&course_end=' + this.props.courseEndTime + '&course_date=' + this.props.DATE}
+                              src={'http://58.181.171.138/php/check/check-student-detail.php?course_id=' + this.props.courseID + '&course_section=' + this.props.courseSection + '&course_start=' + this.props.courseStartTime + '&course_end=' + this.props.courseEndTime + '&course_date=' + this.props.DATE + '&teacher_id=' + this.props.teacherID}
                               style={{width: '100%', height: '600'}}></iframe>
                       {/*<Col md={12}>*/}
                       {/*<Form >*/}
@@ -449,6 +451,7 @@ class TeacherAssistant extends React.Component {
                               <tr>
                                 <th className="text-center">ลำดับ</th>
                                 <th >ชื่อแบบทดสอบ</th>
+                                <th >ดู</th>
                                 <th >แก้ไข</th>
                                 <th >ลบ</th>
                               </tr>

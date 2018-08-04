@@ -54,12 +54,13 @@ class TeacherAssistantCourse extends React.Component {
     const teacherAssistantData = this.props.teacherAssistantData;
     teacherAssistantData.aSubject.map((teacherAssistantSubject, indexSubject) => {
 
-      haveCourse = 0;
       semester = teacherAssistantSubject.ayear_term;
       year = teacherAssistantSubject.ayear_year;
 
 
       teacherAssistantSubject.aGroup.map((teacherAssistantGroup, indexGroup) => {
+
+        haveCourse = 0;
 
         teacherAssistantGroup.aSchedule.map((teacherAssistantSchedule, indexSchedule) => {
 

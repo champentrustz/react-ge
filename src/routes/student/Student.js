@@ -210,6 +210,9 @@ handleSubmit = event => {
 
 
   async checkCode(event){
+
+     event.preventDefault();
+
     const d = new Date();
     const mm = ("0" + (d.getMonth() + 1)).slice(-2);
     const dd = ("0" + (d.getDate())).slice(-2);
@@ -217,11 +220,6 @@ handleSubmit = event => {
     const myDateString = yyyy + '-' + mm + '-' + dd ; //(US)
     const timeLogin =  new Date().toLocaleTimeString('en-US',{ hour12: false });
     const finishDateTime = myDateString + ' ' + timeLogin;
-    var timestart_min = null;
-    var timelogin_min =null;
-    var timestart_hours = null;
-    var timelogin_hours = null;
-    var logintime_min = null;
 
     const respCheck = await fetch('http://58.181.171.138/php/api/checkDuplicateCheckin.php', {
 
@@ -242,10 +240,8 @@ handleSubmit = event => {
     const dataCheck = await respCheck.json();
 
 
-    if(dataCheck.duplicate === 'false'){
 
-
-      fetch('/graphql', {
+      const dataCourse = await fetch('/graphql', {
         method: 'post',
         headers: {
           Accept: 'application/json',
@@ -254,47 +250,29 @@ handleSubmit = event => {
         body: JSON.stringify({
           query: 'query{course(code:"'+this.props.courseID+'",section:"'+this.props.courseSection+'"){ID,code,section,name,checkinCode,startTime,endTime}}',
         }),
-      }).then((response) => response.json())
-        .then((responseJson) => {
-          const {data} = responseJson;
+      })
+          const {data} = await dataCourse.json();
           const courseDetail = data.course;
 
 
-          courseDetail.map((course) => {
 
-              timestart_min = parseInt(this.props.courseStartTime.substring(3, 5), 10);
-              timelogin_min = parseInt(timeLogin.substring(3, 5), 10);
-              timestart_hours = parseInt(this.props.courseStartTime.substring(0, 2), 10);
-              timelogin_hours = parseInt(timeLogin.substring(0, 2), 10);
-              logintime_min = timelogin_min - timestart_min;
+            const timestart_min = parseInt(this.props.courseStartTime.substring(3, 5), 10);
+            const timelogin_min = parseInt(timeLogin.substring(3, 5), 10);
+            const timestart_hours = parseInt(this.props.courseStartTime.substring(0, 2), 10);
+            const timelogin_hours = parseInt(timeLogin.substring(0, 2), 10);
+            const logintime_min = timelogin_min - timestart_min;
+            const logintime_hours = timelogin_hours - timestart_hours;
 
-              if(course.checkinCode == this.state.code) {
-
-
+            const logintime_all = logintime_min + (logintime_hours * 60)
 
 
-                if (timestart_hours == timelogin_hours) {
 
-                  if (logintime_min <= 30) {
+              if(courseDetail[0].checkinCode === this.state.code) {
 
+              if(dataCheck.duplicate === 'false') {
 
-                    fetch('/graphql', {
-                      method: 'POST',
-                      headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify({
-                        query: 'mutation{checkinStudentCreate(courseID:"' + this.props.courseID + '",section:"'+this.props.courseSection+'",studentID:"' + this.props.studentID + '",firstName:"'+this.props.studentFirstName+'",lastName:"'+this.props.studentLastName+'",status:"NORMAL",checkinDate:"' + finishDateTime + '"){ID,status}}',
-                      })
-                    }).then((response) => response.json())
-                      .then(() => {
+                  if (logintime_all <= 30) {
 
-                        window.location.reload();
-                      })
-                  }
-
-                  else if (logintime_min > 30) {
 
                     fetch('/graphql', {
                       method: 'POST',
@@ -303,17 +281,32 @@ handleSubmit = event => {
                         'Content-Type': 'application/json',
                       },
                       body: JSON.stringify({
-                        query: 'mutation{checkinStudentCreate(courseID:"' + this.props.courseID + '",section:"'+this.props.courseSection+'",studentID:"' + this.props.studentID + '",firstName:"'+this.props.studentFirstName+'",lastName:"'+this.props.studentLastName+'",status:"LATE",checkinDate:"' + finishDateTime + '"){ID,status}}',
+                        query: 'mutation{checkinStudentCreate(courseID:"' + this.props.courseID + '",section:"' + this.props.courseSection + '",studentID:"' + this.props.studentID + '",firstName:"' + this.props.studentFirstName + '",lastName:"' + this.props.studentLastName + '",status:"NORMAL",checkinDate:"' + finishDateTime + '"){ID,status}}',
                       })
-                    }).then((response) => response.json())
-                      .then(() => {
+                    }).then(() => {
 
-                        window.location.reload();
-                      })
+                      window.location.reload();
+                    })
                   }
-                }
 
-                else if (timelogin_hours > timestart_hours) {
+                  else if (logintime_all > 30  && logintime_all <= 60) {
+
+                    fetch('/graphql', {
+                      method: 'POST',
+                      headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        query: 'mutation{checkinStudentCreate(courseID:"' + this.props.courseID + '",section:"' + this.props.courseSection + '",studentID:"' + this.props.studentID + '",firstName:"' + this.props.studentFirstName + '",lastName:"' + this.props.studentLastName + '",status:"LATE",checkinDate:"' + finishDateTime + '"){ID,status}}',
+                      })
+                    }).then(() => {
+
+                      window.location.reload();
+                    })
+                  }
+
+                else if (logintime_all > 60) {
 
                   fetch('/graphql', {
                     method: 'POST',
@@ -322,16 +315,14 @@ handleSubmit = event => {
                       'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                      query: 'mutation{checkinStudentCreate(courseID:"' + this.props.courseID + '",section:"'+this.props.courseSection+'",studentID:"' + this.props.studentID + '",firstName:"'+this.props.studentFirstName+'",lastName:"'+this.props.studentLastName+'",status:"ABSENT",checkinDate:"' + finishDateTime + '"){ID,status}}',
+                      query: 'mutation{checkinStudentCreate(courseID:"' + this.props.courseID + '",section:"' + this.props.courseSection + '",studentID:"' + this.props.studentID + '",firstName:"' + this.props.studentFirstName + '",lastName:"' + this.props.studentLastName + '",status:"ABSENT",checkinDate:"' + finishDateTime + '"){ID,status}}',
                     })
-                  }).then((response) => response.json())
-                    .then(() => {
-
-                      window.location.reload();
-                    })
+                  }).then(() => {
+                    window.location.reload();
+                  })
                 }
 
-                else if (timelogin_hours < timestart_hours) {
+                else {
 
                   fetch('/graphql', {
                     method: 'POST',
@@ -340,37 +331,30 @@ handleSubmit = event => {
                       'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                      query: 'mutation{checkinStudentCreate(courseID:"' + this.props.courseID + '",section:"'+this.props.courseSection+'",studentID:"' + this.props.studentID + '",firstName:"'+this.props.studentFirstName+'",lastName:"'+this.props.studentLastName+'",status:"NORMAL",checkinDate:"' + finishDateTime + '"){ID,status}}',
+                      query: 'mutation{checkinStudentCreate(courseID:"' + this.props.courseID + '",section:"' + this.props.courseSection + '",studentID:"' + this.props.studentID + '",firstName:"' + this.props.studentFirstName + '",lastName:"' + this.props.studentLastName + '",status:"ABSENT",checkinDate:"' + finishDateTime + '"){ID,status}}',
                     })
-                  }).then((response) => response.json())
-                    .then(() => {
+                  }).then(() => {
 
-                      window.location.reload();
-                    })
+                    window.location.reload();
+                  })
                 }
+              }
+              else{
+
+                alert("ผิดพลาด! ท่านได้เข้าชั้นเรียนแแล้ว");
+                this.setState({checkinCode: ''});
+              }
 
               }
               else {
-                this.setState({checkinCode: ''});
+
                 alert("รหัสเข้าห้องเรียนไม่ถูกต้อง กรุณากรอกใหม่อีกครั้ง");
+                this.setState({checkinCode: ''});
               }
 
-            }
-          )
-        })
-
-    }
-
-    else if(dataCheck.duplicate === 'true'){
-      alert('ผิดพลาด! ท่านได้ทำการเข้าห้องเรียนแล้ว');
-    }
 
 
 
-
-
-
-    event.preventDefault();
   };
 
   popUp(exercise_ID,indexExercise) {
@@ -464,9 +448,14 @@ render() {
 
   })
 
+    let statusCheck = null;
 
 
       this.props.checkStatus.map((check) => {
+
+
+
+        statusCheck = 0;
 
 
         var timeCheckIn = check.checkinDate.substring(11, 20);
@@ -475,25 +464,18 @@ render() {
            timeCheckOut = check.checkoutDate.substring(11, 20);
         }
         var courseStartTime = this.props.courseStartTime;
+        var courseEndTime = this.props.courseEndTime;
 
 
-        if (timeCheckIn < courseStartTime ) {
-          console.log(timeCheckIn);
-          console.log(courseStartTime);
+        if(timeCheckIn >= courseStartTime && timeCheckIn <= courseEndTime){
 
-          checkStudent = <Panel header="เข้าห้องเรียน" bsStyle="info">
-            <Form onSubmit={this.checkCode.bind(this)}>
-              <FormGroup>
-                <FormControl type="text" placeholder="รหัสเข้าห้องเรียน" value={this.state.code}
-                             onChange={this.codeChange}/>
-              </FormGroup>
-              <div className="text-center">
-                <Button bsStyle="success" block type="submit">เข้าห้องเรียน</Button>
-              </div>
-            </Form>
-          </Panel>
+
+          statusCheck = 1;
+
         }
-        else {
+
+        if(statusCheck === 1){
+
           if (check.status === "NORMAL" ) {
             checkStudent = <Panel header="สถานะการยืนยันตัว" bsStyle="success">
               <h3 className="text-success">
@@ -570,7 +552,23 @@ render() {
             }
           }
         }
+
       })
+
+ if(statusCheck === 0) {
+
+    checkStudent = <Panel header="เข้าห้องเรียน" bsStyle="info">
+      <Form onSubmit={this.checkCode.bind(this)}>
+        <FormGroup>
+          <FormControl type="text" placeholder="รหัสเข้าห้องเรียน" value={this.state.code}
+                       onChange={this.codeChange}/>
+        </FormGroup>
+        <div className="text-center">
+          <Button bsStyle="success" block type="submit">เข้าห้องเรียน</Button>
+        </div>
+      </Form>
+    </Panel>
+  }
     if (this.props.checkStatus.length === 0) {
       checkStudent = <Panel header="เข้าห้องเรียน" bsStyle="info">
         <Form onSubmit={this.checkCode.bind(this)}>

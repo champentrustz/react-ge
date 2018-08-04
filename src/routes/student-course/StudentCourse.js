@@ -75,8 +75,6 @@ class StudentCourse extends React.Component {
 
 
 
-
-
             if(timeToday >= timeStart && timeToday <= timeEnd){
 
               haveCourse = 1;

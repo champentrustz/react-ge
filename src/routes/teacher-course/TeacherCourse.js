@@ -52,12 +52,14 @@ class TeacherCourse extends React.Component {
       const teacherData = this.props.teacherData;
     teacherData.aSubject.map((teacherSubject, indexSubject) => {
 
-      haveCourse = 0;
+
       semester = teacherSubject.ayear_term;
       year = teacherSubject.ayear_year;
 
 
       teacherSubject.aGroup.map((teacherGroup, indexGroup) => {
+
+        haveCourse = 0;
 
         teacherGroup.aSchedule.map((teacherSchedule, indexSchedule) => {
 
@@ -78,8 +80,8 @@ class TeacherCourse extends React.Component {
           if (teacherSchedule.group_schedule_date === today) {
 
 
-
             if(timeToday >= timeStart && timeToday <= timeEnd){
+
 
 
 
@@ -87,6 +89,8 @@ class TeacherCourse extends React.Component {
               scheduleID = teacherSchedule.group_schedule_id;
               scheduleStartTime = teacherSchedule.group_schedule_time_start.substring(0, 5);
               scheduleEndTime = teacherSchedule.group_schedule_time_stop.substring(0, 5);
+
+
 
             }
 
@@ -107,6 +111,7 @@ class TeacherCourse extends React.Component {
 
 
         if (haveCourse === 1) {
+
           teacherCourse.push(<Col md={4}>
             <Thumbnail>
               <h4>{teacherSubject.subjectName}</h4>

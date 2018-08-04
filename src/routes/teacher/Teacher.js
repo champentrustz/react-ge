@@ -68,6 +68,7 @@ class Teacher extends React.Component {
       shareholders2 : [],
       endClass : false,
 
+
     };
 
 
@@ -149,8 +150,8 @@ class Teacher extends React.Component {
     window.history.pushState( {} , '', './'+key );
   }
 
-  checkin = event => {
-
+  checkin = () => {
+    event.preventDefault();
     const rand = Math.floor(Math.random() * 900000) + 100000;
     fetch('/graphql', {
       method: 'POST',
@@ -161,15 +162,12 @@ class Teacher extends React.Component {
       body: JSON.stringify({
         query: 'mutation{codeCheckinUpdate(code:"' + this.props.courseID + '",section:"'+this.props.courseSection+'",checkinCode:"' + rand + '") {ID}}',
       })
-    }).then((response) => response.json())
-      .then(() => {
-        window.location.reload();
-      })
-    this.setState({random: this.state.random + rand});
-    event.preventDefault();
+    })
+    this.setState({checkInCode: rand});
+
   }
 
-  checkout = event => {
+  checkout = () => {
 
     const rand = Math.floor(Math.random() * 900000) + 100000;
     fetch('/graphql', {
@@ -181,12 +179,8 @@ class Teacher extends React.Component {
       body: JSON.stringify({
         query: 'mutation{codeCheckoutUpdate(code:"' + this.props.courseID + '",section:"'+this.props.courseSection+'",checkoutCode:"' + rand + '") {ID}}',
       })
-    }).then((response) => response.json())
-      .then(() => {
-        window.location.reload();
-      })
-    this.setState({random: this.state.random + rand});
-    event.preventDefault();
+    })
+    this.setState({checkOutCode: rand});
   };
 
 
@@ -295,6 +289,7 @@ class Teacher extends React.Component {
       const myDateString = yyyy + '-' + mm + '-' + dd ; //(US)
       const timeLogout =  new Date().toLocaleTimeString('en-US',{ hour12: false });
       const finishDateTime = myDateString + ' ' + timeLogout;
+      let i = 0;
 
 
 
@@ -334,7 +329,7 @@ class Teacher extends React.Component {
       });
       const dataCheck = await respCheck.json();
 
-       let returnSuccess = await courseStudent.map((courseStudent) => {
+       let returnSuccess = await courseStudent.map(async(courseStudent) => {
 
             statusCheckin = 0;
 
@@ -351,7 +346,7 @@ class Teacher extends React.Component {
             if(statusCheckin === 0){
 
 
-              fetch('/graphql', {
+            let dataResp = await fetch('/graphql', {
                 method: 'POST',
                 headers: {
                   'Accept': 'application/json',
@@ -362,16 +357,26 @@ class Teacher extends React.Component {
                   'checkinDate:"'+finishDateTime+'",checkoutDate:"'+finishDateTime+'"){ID}}',
                 })
               })
+
+              const dataFetch = await dataResp;
+
+            if(dataFetch){
+              i++;
+              return i;
+            }
+
+
+
             }
         })
 
-
-      return returnSuccess;
+      const success = Promise.all(returnSuccess);
+      return success;
 
   }
 
 
-  async postDataToTSS(a){
+  async postDataToTSS(){
 
     let statusCheck = null;
     let attendTime = null;
@@ -381,6 +386,32 @@ class Teacher extends React.Component {
     let attendTimeInHour = null;
     let attendTimeOutMinute = null;
     let attendTimeOutHour = null;
+    let email = [];
+    let i = 0;
+
+    const respEmail = await fetch('http://ge-tss.ssru.ac.th/index.php/Checkinapi/getDataAttendBySubject', {
+
+      method: 'post',
+      headers: {
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+
+        subject_id : this.props.courseID,
+        group_id : this.props.courseSection,
+        apiKey : "afab7e2f35fe11c45116e2315e7387b6",
+        sReturn : "1"
+
+      }),
+    });
+    const data = await respEmail.json();
+    const dataEmail = data.data;
+
+    dataEmail[0].aTeacher.map((data) =>{
+      email.push({
+        'email': data.teacherEmail
+      });
+    })
 
 
     const respCheck = await fetch('http://58.181.171.138/php/api/checkStudent.php', {
@@ -402,7 +433,23 @@ class Teacher extends React.Component {
 
 
 
-    let returnSuccess = await dataCheck.map((check, indexCheckStudent) =>{
+    fetch('http://58.181.171.138/php/report/function-send-email.php', {
+
+      method: 'post',
+      headers: {
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+
+        student_data : dataCheck,
+        teacher_email : email,
+        course_id : this.props.courseID,
+        group_name : this.props.sectionName
+
+      }),
+    });
+
+    let returnSuccess = await dataCheck.map(async(check, indexCheckStudent) =>{
 
 
       attendTime =  check.checkinDate.substr(11,5);
@@ -437,7 +484,7 @@ class Teacher extends React.Component {
     }
 
 
-      fetch('http://ge-tss.ssru.ac.th/index.php/Checkinapi/saveAttend ', {
+      let dataResp = await fetch('http://ge-tss.ssru.ac.th/index.php/Checkinapi/saveAttend ', {
 
         method: 'post',
         headers: {
@@ -457,17 +504,25 @@ class Teacher extends React.Component {
         }),
       });
 
+      const dataFetch = await dataResp;
+
+      if(dataFetch){
+        i++;
+        return i;
+      }
+
   })
 
-    return returnSuccess;
+    const success = await Promise.all(returnSuccess);
+    return success;
   }
 
- async  resetCode(b){
+ async  resetCode(){
 
     //this.setState({endClass: true});
 
 
-    let resetCheckin = await fetch('/graphql', {
+     fetch('/graphql', {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
@@ -478,7 +533,7 @@ class Teacher extends React.Component {
       })
     })
 
-    let resetCheckout = await fetch('/graphql', {
+    fetch('/graphql', {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
@@ -489,7 +544,6 @@ class Teacher extends React.Component {
       })
     })
 
-   return resetCheckout;
 
 
 
@@ -497,7 +551,8 @@ class Teacher extends React.Component {
 
   backToSelectCourse(){
 
-    window.location.replace("/teacher-course");
+    setTimeout(function(){ window.location.replace("/teacher-course"); }, 1000);
+
   }
 
 
@@ -505,9 +560,9 @@ class Teacher extends React.Component {
 async endClassAction(){
 
       let a = await this.endClass();
-      let  b = await this.postDataToTSS(a);
-      let  c = await this.resetCode(b);
-      this.logoutRedirect(c)
+      let b = await this.postDataToTSS(a);
+      this.resetCode();
+      this.backToSelectCourse(b);
 
 }
 
@@ -528,13 +583,13 @@ exerciseNameChange(event){
 
 
   popUpCreate(exercise_ID){
-     const win = window.open('http://58.181.171.138/php/exercise-question/exercise-question-create-session.php?exercise_id='+exercise_ID,'exercise-question-create','width=1200,height=1000');
-      var timer = setInterval(function() {
-        if(win.closed) {
-          clearInterval(timer);
-          window.location.reload();
-        }
-      }, 500);
+   const win = window.open('http://58.181.171.138/php/exercise-question/exercise-question-create-session.php?exercise_id='+exercise_ID,'exercise-question-create','width=1200,height=1000');
+    var timer = setInterval(function() {
+      if(win.closed) {
+        clearInterval(timer);
+        window.location.reload();
+      }
+    }, 500);
   }
 
   popUpUpdate(exercise_ID){
@@ -575,13 +630,51 @@ exerciseNameChange(event){
 
   componentDidMount(){
 
+    this.props.course.map((course) =>{
+      if(course.checkinCode === null){
+        const rand = Math.floor(Math.random() * 900000) + 100000;
+        fetch('/graphql', {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            query: 'mutation{codeCheckinUpdate(code:"' + this.props.courseID + '",section:"'+this.props.courseSection+'",checkinCode:"' + rand + '") {ID}}',
+          })
+        }).then(() => {
+          this.setState({checkInCode : rand})
+        })
+      }
+      else{
+        this.setState({checkInCode : course.checkinCode})
+      }
+      if(course.checkoutCode === null){
+        const rand = Math.floor(Math.random() * 900000) + 100000;
+        fetch('/graphql', {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            query: 'mutation{codeCheckoutUpdate(code:"' + this.props.courseID + '",section:"'+this.props.courseSection+'",checkoutCode:"' + rand + '") {ID}}',
+          })
+        }).then(() => {
+          this.setState({checkOutCode : rand})
+        })
+      }
+      else{
+        this.setState({checkOutCode : course.checkoutCode})
+      }
 
+    })
 
   }
 
   render() {
 
-    console.log(this.props.statusClass);
+
 
 
     let buttonEditStatus = null;
@@ -633,40 +726,6 @@ exerciseNameChange(event){
     })
 
 
-
-    this.props.course.map((course) =>{
-      if(course.checkinCode === null){
-        const rand = Math.floor(Math.random() * 900000) + 100000;
-        fetch('/graphql', {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            query: 'mutation{codeCheckinUpdate(code:"' + this.props.courseID + '",section:"'+this.props.courseSection+'",checkinCode:"' + rand + '") {ID}}',
-          })
-        }).then(() => {
-          window.location.reload();
-        })
-      }
-      if(course.checkoutCode === null){
-        const rand = Math.floor(Math.random() * 900000) + 100000;
-        fetch('/graphql', {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            query: 'mutation{codeCheckoutUpdate(code:"' + this.props.courseID + '",section:"'+this.props.courseSection+'",checkoutCode:"' + rand + '") {ID}}',
-          })
-        }).then(() => {
-          window.location.reload();
-        })
-      }
-
-    })
 
     this.props.exercise.map((exercise,indexExercise) => {
 
@@ -722,7 +781,7 @@ exerciseNameChange(event){
               </h1>
               {this.props.statusClass === 'manage' &&
               <h4 className="text-danger">
-                หากต้องการเปิดห้องเรียน กรุณาเลือกห้องเรียนเพื่อเข้าห้องเรียน
+                หากต้องการเปิดห้องเรียน กรุณากลับไปเข้าห้องเรียนอีกครั้ง
               </h4>
               }
             </Col>
@@ -733,45 +792,10 @@ exerciseNameChange(event){
 
           <Col md={4}>
 
-            {this.props.statusClass === 'manage' &&
-            <Panel bsStyle="warning">
-              <Button bsStyle="warning" block type="button" onClick={this.backToSelectCourse.bind(this)}>เลือกห้องเรียน</Button>
-            </Panel>
-            }
+            <CheckinCodeCard checkInCode={this.state.checkInCode} functionRandomCheckIn={this.checkin}/>
 
-              <Form onSubmit={this.checkin}>
-                <div className="panel panel-info" >
-                  <div className="panel-heading " >เข้าห้องเรียน</div>
-                  <div className="panel-body">
-                    <div className="text-center">
-                      <ControlLabel>โค๊ดยืนยันตัวตน</ControlLabel>,
-                      {this.props.course.map((course) =>
-                      <h2 className={s.activateCode}>{course.checkinCode}</h2>
-                      )}
-                      <br/>
-                      <Button bsStyle="success" block type="submit">สุ่มรหัสยืนยัน</Button>
-                    </div>
-                  </div>
-                </div>
-              </Form>
+            <CheckOutCodeCard checkOutCode={this.state.checkOutCode} functionRandomCheckOut={this.checkout}/>
 
-
-
-              <Form onSubmit={this.checkout}>
-                <div className="panel panel-danger" >
-                  <div className="panel-heading " >ออกจากห้องเรียน</div>
-                  <div className="panel-body">
-                    <div className="text-center">
-                      <ControlLabel>โค๊ดยืนยันตัวตน</ControlLabel>,
-                      {this.props.course.map((course) =>
-                      <h2 className={s.activateCode}>{course.checkoutCode}</h2>
-                      )}
-                      <br/>
-                      <Button bsStyle="success" block type="submit">สุ่มรหัสยืนยัน</Button>
-                    </div>
-                  </div>
-                </div>
-              </Form>
 
 
             {this.props.statusClass === 'class' &&
@@ -973,6 +997,7 @@ exerciseNameChange(event){
                               <tr>
                                 <th >ลำดับ</th>
                                 <th >ชื่อแบบทดสอบ</th>
+                                <th >ดู</th>
                                 <th >แก้ไข</th>
                                 <th >ลบ</th>
                               </tr>
@@ -1086,5 +1111,44 @@ exerciseNameChange(event){
 }
 
 
+const CheckinCodeCard = (props) => {
+  return(
+
+    <div className="panel panel-info" >
+      <div className="panel-heading " >เข้าห้องเรียน</div>
+      <div className="panel-body">
+        <div className="text-center">
+          <ControlLabel>โค๊ดยืนยันตัวตน</ControlLabel>,
+          <h2 className={s.activateCode}>{props.checkInCode}</h2>
+          <br/>
+          <Button bsStyle="success" block onClick={props.functionRandomCheckIn}>สุ่มรหัสยืนยัน</Button>
+        </div>
+      </div>
+    </div>
+
+
+  )
+}
+
+const CheckOutCodeCard = (props) => {
+  return(
+
+
+      <div className="panel panel-danger" >
+        <div className="panel-heading " >ออกจากห้องเรียน</div>
+        <div className="panel-body">
+          <div className="text-center">
+            <ControlLabel>โค๊ดยืนยันตัวตน</ControlLabel>,
+              <h2 className={s.activateCode}>{props.checkOutCode}</h2>
+            <br/>
+            <Button bsStyle="success" block  onClick={props.functionRandomCheckOut}>สุ่มรหัสยืนยัน</Button>
+          </div>
+        </div>
+      </div>
+
+
+
+  )
+}
 
 export default withStyles(s)(Teacher);
